@@ -1,20 +1,25 @@
 import type { MarkdownHeading } from 'astro';
-import { fileURLToPath } from 'node:url';
 import project from 'virtual:starlight/project-context';
 import config from 'virtual:starlight/user-config';
 import { generateToC, type TocItem } from './generateToC';
-import { getFileCommitDate } from './git';
+import { getNewestCommitDate } from 'virtual:starlight/git-info';
 import { getPrevNextLinks, getSidebar, type SidebarEntry } from './navigation';
 import { ensureTrailingSlash } from './path';
 import type { Route } from './routing';
 import { localizedId } from './slugs';
+import { formatPath } from './format-path';
 import { useTranslations } from './translations';
+import { DeprecatedLabelsPropProxy } from './i18n';
 
-interface PageProps extends Route {
+export interface PageProps extends Route {
 	headings: MarkdownHeading[];
 }
 
 export interface StarlightRouteData extends Route {
+	/** Title of the site. */
+	siteTitle: string;
+	/** URL or path used as the link when clicking on the site title. */
+	siteTitleHref: string;
 	/** Array of Markdown headings extracted from the current page. */
 	headings: MarkdownHeading[];
 	/** Site navigation sidebar entries for this page. */
@@ -29,6 +34,8 @@ export interface StarlightRouteData extends Route {
 	lastUpdated: Date | undefined;
 	/** URL object for the address where this page can be edited if enabled. */
 	editUrl: URL | undefined;
+	/** @deprecated Use `Astro.locals.t()` instead. */
+	labels: Record<string, never>;
 }
 
 export function generateRouteData({
@@ -38,46 +45,54 @@ export function generateRouteData({
 	props: PageProps;
 	url: URL;
 }): StarlightRouteData {
-	const { entry, locale } = props;
+	const { entry, locale, lang } = props;
 	const sidebar = getSidebar(url.pathname, locale);
+	const siteTitle = getSiteTitle(lang);
 	return {
 		...props,
+		siteTitle,
+		siteTitleHref: getSiteTitleHref(locale),
 		sidebar,
 		hasSidebar: entry.data.template !== 'splash',
 		pagination: getPrevNextLinks(sidebar, config.pagination, entry.data),
 		toc: getToC(props),
 		lastUpdated: getLastUpdated(props),
 		editUrl: getEditUrl(props),
+		labels: DeprecatedLabelsPropProxy,
 	};
 }
 
-function getToC({ entry, locale, headings }: PageProps) {
+export function getToC({ entry, lang, headings }: PageProps) {
 	const tocConfig =
 		entry.data.template === 'splash'
 			? false
 			: entry.data.tableOfContents !== undefined
-			? entry.data.tableOfContents
-			: config.tableOfContents;
+				? entry.data.tableOfContents
+				: config.tableOfContents;
 	if (!tocConfig) return;
-	const t = useTranslations(locale);
+	const t = useTranslations(lang);
 	return {
 		...tocConfig,
 		items: generateToC(headings, { ...tocConfig, title: t('tableOfContents.overview') }),
 	};
 }
 
-function getLastUpdated({ entry, id }: PageProps): Date | undefined {
-	if (entry.data.lastUpdated ?? config.lastUpdated) {
-		const currentFilePath = fileURLToPath(new URL('src/content/docs/' + id, project.root));
-		let date = typeof entry.data.lastUpdated !== 'boolean' ? entry.data.lastUpdated : undefined;
-		if (!date) {
-			try {
-				({ date } = getFileCommitDate(currentFilePath, 'newest'));
-			} catch {}
+function getLastUpdated({ entry }: PageProps): Date | undefined {
+	const { lastUpdated: frontmatterLastUpdated } = entry.data;
+	const { lastUpdated: configLastUpdated } = config;
+
+	if (frontmatterLastUpdated ?? configLastUpdated) {
+		try {
+			return frontmatterLastUpdated instanceof Date
+				? frontmatterLastUpdated
+				: getNewestCommitDate(entry.id);
+		} catch {
+			// If the git command fails, ignore the error.
+			return undefined;
 		}
-		return date;
 	}
-	return;
+
+	return undefined;
 }
 
 function getEditUrl({ entry, id, isFallback }: PageProps): URL | undefined {
@@ -96,4 +111,17 @@ function getEditUrl({ entry, id, isFallback }: PageProps): URL | undefined {
 		url = ensureTrailingSlash(config.editLink.baseUrl) + srcPath + 'content/docs/' + filePath;
 	}
 	return url ? new URL(url) : undefined;
+}
+
+/** Get the site title for a given language. **/
+export function getSiteTitle(lang: string): string {
+	const defaultLang = config.defaultLocale.lang as string;
+	if (lang && config.title[lang]) {
+		return config.title[lang] as string;
+	}
+	return config.title[defaultLang] as string;
+}
+
+export function getSiteTitleHref(locale: string | undefined): string {
+	return formatPath(locale || '/');
 }

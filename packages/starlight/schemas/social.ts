@@ -14,6 +14,7 @@ export const socialLinks = [
 	'threads',
 	'linkedin',
 	'twitch',
+	'azureDevOps',
 	'microsoftTeams',
 	'instagram',
 	'stackOverflow',
@@ -24,6 +25,17 @@ export const socialLinks = [
 	'email',
 	'reddit',
 	'patreon',
+	'signal',
+	'slack',
+	'matrix',
+	'openCollective',
+	'hackerOne',
+	'blueSky',
+	'discourse',
+	'zulip',
+	'pinterest',
+	'tiktok',
+	'nostr',
 ] as const;
 
 export const SocialLinksSchema = () =>
@@ -53,6 +65,7 @@ export const SocialLinksSchema = () =>
 					threads: 'Threads',
 					linkedin: 'LinkedIn',
 					twitch: 'Twitch',
+					azureDevOps: 'Azure DevOps',
 					microsoftTeams: 'Microsoft Teams',
 					instagram: 'Instagram',
 					stackOverflow: 'Stack Overflow',
@@ -63,6 +76,17 @@ export const SocialLinksSchema = () =>
 					email: 'Email',
 					reddit: 'Reddit',
 					patreon: 'Patreon',
+					signal: 'Signal',
+					slack: 'Slack',
+					matrix: 'Matrix',
+					openCollective: 'Open Collective',
+					hackerOne: 'Hacker One',
+					blueSky: 'BlueSky',
+					discourse: 'Discourse',
+					zulip: 'Zulip',
+					pinterest: 'Pinterest',
+					tiktok: 'TikTok',
+					nostr: 'Nostr',
 				}[key];
 				labelledLinks[key] = { label, url };
 			}

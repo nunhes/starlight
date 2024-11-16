@@ -1,6 +1,8 @@
 import config from 'virtual:starlight/user-config';
-import { expect, test, vi } from 'vitest';
+import { assert, expect, test, vi } from 'vitest';
 import { routes } from '../../utils/routing';
+import { generateRouteData } from '../../utils/route-data';
+import * as git from 'virtual:starlight/git-info';
 
 vi.mock('astro:content', async () =>
 	(await import('../test-utils')).mockedAstroContent({
@@ -11,13 +13,16 @@ vi.mock('astro:content', async () =>
 			['en/index.mdx', { title: 'Home page' }],
 			// @ts-expect-error — Using a slug not present in Starlight docs site
 			['ar/index.mdx', { title: 'الصفحة الرئيسية' }],
-			['guides/authoring-content.md', { title: 'Création de contenu en Markdown' }],
+			[
+				'guides/authoring-content.mdx',
+				{ title: 'Création de contenu en Markdown', lastUpdated: true },
+			],
 		],
 	})
 );
 
 test('test suite is using correct env', () => {
-	expect(config.title).toBe('i18n with root locale');
+	expect(config.title).toMatchObject({ fr: 'i18n with root locale' });
 });
 
 test('routes includes fallback entries for untranslated pages', () => {
@@ -56,8 +61,31 @@ test('fallback routes have fallback locale data in entryMeta', () => {
 });
 
 test('fallback routes use their own locale data', () => {
-	const enGuide = routes.find((route) => route.id === 'en/guides/authoring-content.md');
-	if (!enGuide) throw new Error('Expected to find English fallback route for authoring-content.md');
+	const enGuide = routes.find((route) => route.id === 'en/guides/authoring-content.mdx');
+	if (!enGuide)
+		throw new Error('Expected to find English fallback route for authoring-content.mdx');
 	expect(enGuide.locale).toBe('en');
 	expect(enGuide.lang).toBe('en-US');
+});
+
+test('fallback routes use fallback entry last updated dates', () => {
+	const getNewestCommitDate = vi.spyOn(git, 'getNewestCommitDate');
+	const route = routes.find((route) => route.entry.id === routes[4]!.id && route.locale === 'en');
+	assert(route, 'Expected to find English fallback route for `guides/authoring-content.mdx`.');
+
+	generateRouteData({
+		props: {
+			...route,
+			headings: [{ depth: 1, slug: 'heading-1', text: 'Heading 1' }],
+		},
+		url: new URL('https://example.com/en'),
+	});
+
+	expect(getNewestCommitDate).toHaveBeenCalledOnce();
+	expect(getNewestCommitDate).toHaveBeenCalledWith(
+		'guides/authoring-content.mdx'
+		//^ no `en/` prefix
+	);
+
+	getNewestCommitDate.mockRestore();
 });

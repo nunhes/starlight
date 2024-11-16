@@ -1,20 +1,26 @@
-import { basename, dirname } from 'node:path';
+import { AstroError } from 'astro/errors';
 import config from 'virtual:starlight/user-config';
+import type { Badge, I18nBadge, I18nBadgeConfig } from '../schemas/badge';
 import type { PrevNextLinkConfig } from '../schemas/prevNextLink';
-import { pathWithBase } from './base';
-import { pickLang } from './i18n';
-import { getLocaleRoutes, type Route } from './routing';
-import { localeToLang, slugToPathname } from './slugs';
-import { ensureLeadingAndTrailingSlashes, ensureTrailingSlash } from './path';
-import type { Badge } from '../schemas/badge';
 import type {
 	AutoSidebarGroup,
+	InternalSidebarLinkItem,
 	LinkHTMLAttributes,
 	SidebarItem,
 	SidebarLinkItem,
 } from '../schemas/sidebar';
+import { createPathFormatter } from './createPathFormatter';
+import { formatPath } from './format-path';
+import { BuiltInDefaultLocale, pickLang } from './i18n';
+import { ensureLeadingSlash, ensureTrailingSlash, stripLeadingAndTrailingSlashes } from './path';
+import { getLocaleRoutes, routes, type Route } from './routing';
+import { localeToLang, slugToPathname } from './slugs';
+import type { StarlightConfig } from './user-config';
 
 const DirKey = Symbol('DirKey');
+const SlugKey = Symbol('SlugKey');
+
+const neverPathFormatter = createPathFormatter({ trailingSlash: 'never' });
 
 export interface Link {
 	type: 'link';
@@ -30,6 +36,7 @@ interface Group {
 	label: string;
 	entries: (Link | Group)[];
 	collapsed: boolean;
+	badge: Badge | undefined;
 }
 
 export type SidebarEntry = Link | Group;
@@ -42,14 +49,16 @@ export type SidebarEntry = Link | Group;
  */
 interface Dir {
 	[DirKey]: undefined;
+	[SlugKey]: string;
 	[item: string]: Dir | Route;
 }
 
 /** Create a new directory object. */
-function makeDir(): Dir {
+function makeDir(slug: string): Dir {
 	const dir = {} as Dir;
-	// Add DirKey as a non-enumerable property so that `Object.entries(dir)` ignores it.
+	// Add DirKey and SlugKey as non-enumerable properties so that `Object.entries(dir)` ignores them.
 	Object.defineProperty(dir, DirKey, { enumerable: false });
+	Object.defineProperty(dir, SlugKey, { value: slug, enumerable: false });
 	return dir;
 }
 
@@ -66,15 +75,19 @@ function configItemToEntry(
 	routes: Route[]
 ): SidebarEntry {
 	if ('link' in item) {
-		return linkFromConfig(item, locale, currentPathname);
+		return linkFromSidebarLinkItem(item, locale);
 	} else if ('autogenerate' in item) {
 		return groupFromAutogenerateConfig(item, locale, routes, currentPathname);
+	} else if ('slug' in item) {
+		return linkFromInternalSidebarLinkItem(item, locale);
 	} else {
+		const label = pickLang(item.translations, localeToLang(locale)) || item.label;
 		return {
 			type: 'group',
-			label: pickLang(item.translations, localeToLang(locale)) || item.label,
+			label,
 			entries: item.items.map((i) => configItemToEntry(i, currentPathname, locale, routes)),
 			collapsed: item.collapsed,
+			badge: getSidebarBadge(item.badge, locale, label),
 		};
 	}
 }
@@ -96,44 +109,90 @@ function groupFromAutogenerateConfig(
 			doc.id.startsWith(localeDir + '/')
 	);
 	const tree = treeify(dirDocs, localeDir);
+	const label = pickLang(item.translations, localeToLang(locale)) || item.label;
 	return {
 		type: 'group',
-		label: pickLang(item.translations, localeToLang(locale)) || item.label,
+		label,
 		entries: sidebarFromDir(tree, currentPathname, locale, subgroupCollapsed ?? item.collapsed),
 		collapsed: item.collapsed,
+		badge: getSidebarBadge(item.badge, locale, label),
 	};
 }
 
 /** Check if a string starts with one of `http://` or `https://`. */
 const isAbsolute = (link: string) => /^https?:\/\//.test(link);
 
-/** Create a link entry from a user config object. */
-function linkFromConfig(
-	item: SidebarLinkItem,
-	locale: string | undefined,
-	currentPathname: string
-) {
+/** Create a link entry from a manual link item in user config. */
+function linkFromSidebarLinkItem(item: SidebarLinkItem, locale: string | undefined) {
 	let href = item.link;
 	if (!isAbsolute(href)) {
-		href = ensureLeadingAndTrailingSlashes(href);
+		href = ensureLeadingSlash(href);
 		// Inject current locale into link.
 		if (locale) href = '/' + locale + href;
 	}
 	const label = pickLang(item.translations, localeToLang(locale)) || item.label;
-	return makeLink(href, label, currentPathname, item.badge, item.attrs);
+	return makeSidebarLink(href, label, getSidebarBadge(item.badge, locale, label), item.attrs);
 }
 
-/** Create a link entry. */
-function makeLink(
+/** Create a link entry from an automatic internal link item in user config. */
+function linkFromInternalSidebarLinkItem(
+	item: InternalSidebarLinkItem,
+	locale: string | undefined
+) {
+	// Astro passes root `index.[md|mdx]` entries with a slug of `index`
+	const slug = item.slug === 'index' ? '' : item.slug;
+	const localizedSlug = locale ? (slug ? locale + '/' + slug : locale) : slug;
+	const entry = routes.find((entry) => localizedSlug === entry.slug);
+	if (!entry) {
+		const hasExternalSlashes = item.slug.at(0) === '/' || item.slug.at(-1) === '/';
+		if (hasExternalSlashes) {
+			throw new AstroError(
+				`The slug \`"${item.slug}"\` specified in the Starlight sidebar config must not start or end with a slash.`,
+				`Please try updating \`"${item.slug}"\` to \`"${stripLeadingAndTrailingSlashes(item.slug)}"\`.`
+			);
+		} else {
+			throw new AstroError(
+				`The slug \`"${item.slug}"\` specified in the Starlight sidebar config does not exist.`,
+				'Update the Starlight config to reference a valid entry slug in the docs content collection.\n' +
+					'Learn more about Astro content collection slugs at https://docs.astro.build/en/reference/modules/astro-content/#getentry'
+			);
+		}
+	}
+	const label =
+		pickLang(item.translations, localeToLang(locale)) || item.label || entry.entry.data.title;
+	return makeSidebarLink(entry.slug, label, getSidebarBadge(item.badge, locale, label), item.attrs);
+}
+
+/** Process sidebar link options to create a link entry. */
+function makeSidebarLink(
 	href: string,
 	label: string,
-	currentPathname: string,
 	badge?: Badge,
 	attrs?: LinkHTMLAttributes
 ): Link {
-	if (!isAbsolute(href)) href = pathWithBase(href);
-	const isCurrent = href === ensureTrailingSlash(currentPathname);
-	return { type: 'link', label, href, isCurrent, badge, attrs: attrs ?? {} };
+	if (!isAbsolute(href)) {
+		href = formatPath(href);
+	}
+	return makeLink({ label, href, badge, attrs });
+}
+
+/** Create a link entry */
+function makeLink({
+	attrs = {},
+	badge = undefined,
+	...opts
+}: {
+	label: string;
+	href: string;
+	badge?: Badge | undefined;
+	attrs?: LinkHTMLAttributes | undefined;
+}): Link {
+	return { type: 'link', ...opts, badge, isCurrent: false, attrs };
+}
+
+/** Test if two paths are equivalent even if formatted differently. */
+function pathsMatch(pathA: string, pathB: string) {
+	return neverPathFormatter(pathA) === neverPathFormatter(pathB);
 }
 
 /** Get the segments leading to a page. */
@@ -143,46 +202,56 @@ function getBreadcrumbs(path: string, baseDir: string): string[] {
 	// Index paths will match `baseDir` and don’t include breadcrumbs.
 	if (pathWithoutExt === baseDir) return [];
 	// Ensure base directory ends in a trailing slash.
-	if (!baseDir.endsWith('/')) baseDir += '/';
+	baseDir = ensureTrailingSlash(baseDir);
 	// Strip base directory from path if present.
 	const relativePath = pathWithoutExt.startsWith(baseDir)
 		? pathWithoutExt.replace(baseDir, '')
 		: pathWithoutExt;
-	let dir = dirname(relativePath);
-	// Return no breadcrumbs for items in the root directory.
-	if (dir === '.') return [];
-	return dir.split('/');
+
+	return relativePath.split('/');
 }
 
 /** Turn a flat array of routes into a tree structure. */
 function treeify(routes: Route[], baseDir: string): Dir {
-	const treeRoot: Dir = makeDir();
+	const treeRoot: Dir = makeDir(baseDir);
 	routes
 		// Remove any entries that should be hidden
 		.filter((doc) => !doc.entry.data.sidebar.hidden)
+		// Sort by depth, to build the tree depth first.
+		.sort((a, b) => b.id.split('/').length - a.id.split('/').length)
+		// Build the tree
 		.forEach((doc) => {
-			const breadcrumbs = getBreadcrumbs(doc.id, baseDir);
+			const parts = getBreadcrumbs(doc.id, baseDir);
+			let currentNode = treeRoot;
 
-			// Walk down the route’s path to generate the tree.
-			let currentDir = treeRoot;
-			breadcrumbs.forEach((dir) => {
-				// Create new folder if needed.
-				if (typeof currentDir[dir] === 'undefined') currentDir[dir] = makeDir();
-				// Go into the subdirectory.
-				currentDir = currentDir[dir] as Dir;
+			parts.forEach((part, index) => {
+				const isLeaf = index === parts.length - 1;
+
+				// Handle directory index pages by renaming them to `index`
+				if (isLeaf && currentNode.hasOwnProperty(part)) {
+					currentNode = currentNode[part] as Dir;
+					part = 'index';
+				}
+
+				// Recurse down the tree if this isn’t the leaf node.
+				if (!isLeaf) {
+					const path = currentNode[SlugKey];
+					currentNode[part] ||= makeDir(stripLeadingAndTrailingSlashes(path + '/' + part));
+					currentNode = currentNode[part] as Dir;
+				} else {
+					currentNode[part] = doc;
+				}
 			});
-			// We’ve walked through the path. Register the route in this directory.
-			currentDir[basename(doc.slug)] = doc;
 		});
+
 	return treeRoot;
 }
 
 /** Create a link entry for a given content collection entry. */
-function linkFromRoute(route: Route, currentPathname: string): Link {
-	return makeLink(
+function linkFromRoute(route: Route): Link {
+	return makeSidebarLink(
 		slugToPathname(route.slug),
 		route.entry.data.sidebar.label || route.entry.data.title,
-		currentPathname,
 		route.entry.data.sidebar.badge,
 		route.entry.data.sidebar.attrs
 	);
@@ -196,21 +265,18 @@ function getOrder(routeOrDir: Route | Dir): number {
 	return isDir(routeOrDir)
 		? Math.min(...Object.values(routeOrDir).flatMap(getOrder))
 		: // If no order value is found, set it to the largest number possible.
-		  routeOrDir.entry.data.sidebar.order ?? Number.MAX_VALUE;
+			(routeOrDir.entry.data.sidebar.order ?? Number.MAX_VALUE);
 }
 
 /** Sort a directory’s entries by user-specified order or alphabetically if no order specified. */
-function sortDirEntries(
-	dir: [string, Dir | Route][],
-	locale: string | undefined
-): [string, Dir | Route][] {
-	const collator = new Intl.Collator(localeToLang(locale));
-	return dir.sort(([keyA, a], [keyB, b]) => {
+function sortDirEntries(dir: [string, Dir | Route][]): [string, Dir | Route][] {
+	const collator = new Intl.Collator(localeToLang(undefined));
+	return dir.sort(([_keyA, a], [_keyB, b]) => {
 		const [aOrder, bOrder] = [getOrder(a), getOrder(b)];
 		// Pages are sorted by order in ascending order.
 		if (aOrder !== bOrder) return aOrder < bOrder ? -1 : 1;
 		// If two pages have the same order value they will be sorted by their slug.
-		return collator.compare(isDir(a) ? keyA : a.slug, isDir(b) ? keyB : b.slug);
+		return collator.compare(isDir(a) ? a[SlugKey] : a.slug, isDir(b) ? b[SlugKey] : b.slug);
 	});
 }
 
@@ -223,7 +289,7 @@ function groupFromDir(
 	locale: string | undefined,
 	collapsed: boolean
 ): Group {
-	const entries = sortDirEntries(Object.entries(dir), locale).map(([key, dirOrRoute]) =>
+	const entries = sortDirEntries(Object.entries(dir)).map(([key, dirOrRoute]) =>
 		dirToItem(dirOrRoute, `${fullPath}/${key}`, key, currentPathname, locale, collapsed)
 	);
 	return {
@@ -231,6 +297,7 @@ function groupFromDir(
 		label: dirName,
 		entries,
 		collapsed,
+		badge: undefined,
 	};
 }
 
@@ -245,7 +312,7 @@ function dirToItem(
 ): SidebarEntry {
 	return isDir(dirOrRoute)
 		? groupFromDir(dirOrRoute, fullPath, dirName, currentPathname, locale, collapsed)
-		: linkFromRoute(dirOrRoute, currentPathname);
+		: linkFromRoute(dirOrRoute);
 }
 
 /** Create a sidebar entry for a given content directory. */
@@ -255,20 +322,95 @@ function sidebarFromDir(
 	locale: string | undefined,
 	collapsed: boolean
 ) {
-	return sortDirEntries(Object.entries(tree), locale).map(([key, dirOrRoute]) =>
+	return sortDirEntries(Object.entries(tree)).map(([key, dirOrRoute]) =>
 		dirToItem(dirOrRoute, key, key, currentPathname, locale, collapsed)
 	);
 }
 
-/** Get the sidebar for the current page. */
+/**
+ * Intermediate sidebar represents sidebar entries generated from the user config for a specific
+ * locale and do not contain any information about the current page.
+ * These representations are cached per locale to avoid regenerating them for each page.
+ * When generating the final sidebar for a page, the intermediate sidebar is cloned and the current
+ * page is marked as such.
+ *
+ * @see getSidebarFromIntermediateSidebar
+ */
+const intermediateSidebars = new Map<string | undefined, SidebarEntry[]>();
+
+/** Get the sidebar for the current page using the global config. */
 export function getSidebar(pathname: string, locale: string | undefined): SidebarEntry[] {
+	let intermediateSidebar = intermediateSidebars.get(locale);
+	if (!intermediateSidebar) {
+		intermediateSidebar = getSidebarFromConfig(config.sidebar, pathname, locale);
+		intermediateSidebars.set(locale, intermediateSidebar);
+	}
+	return getSidebarFromIntermediateSidebar(intermediateSidebar, pathname);
+}
+
+/** Get the sidebar for the current page using the specified sidebar config. */
+export function getSidebarFromConfig(
+	sidebarConfig: StarlightConfig['sidebar'],
+	pathname: string,
+	locale: string | undefined
+): SidebarEntry[] {
 	const routes = getLocaleRoutes(locale);
-	if (config.sidebar) {
-		return config.sidebar.map((group) => configItemToEntry(group, pathname, locale, routes));
+	if (sidebarConfig) {
+		return sidebarConfig.map((group) => configItemToEntry(group, pathname, locale, routes));
 	} else {
 		const tree = treeify(routes, locale || '');
 		return sidebarFromDir(tree, pathname, locale, false);
 	}
+}
+
+/** Transform an intermediate sidebar into a sidebar for the current page. */
+function getSidebarFromIntermediateSidebar(
+	intermediateSidebar: SidebarEntry[],
+	pathname: string
+): SidebarEntry[] {
+	const sidebar = structuredClone(intermediateSidebar);
+	setIntermediateSidebarCurrentEntry(sidebar, pathname);
+	return sidebar;
+}
+
+/** Marks the current page as such in an intermediate sidebar. */
+function setIntermediateSidebarCurrentEntry(
+	intermediateSidebar: SidebarEntry[],
+	pathname: string
+): boolean {
+	for (const entry of intermediateSidebar) {
+		if (entry.type === 'link' && pathsMatch(encodeURI(entry.href), pathname)) {
+			entry.isCurrent = true;
+			return true;
+		}
+
+		if (entry.type === 'group' && setIntermediateSidebarCurrentEntry(entry.entries, pathname)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/** Generates a deterministic string based on the content of the passed sidebar. */
+export function getSidebarHash(sidebar: SidebarEntry[]): string {
+	let hash = 0;
+	const sidebarIdentity = recursivelyBuildSidebarIdentity(sidebar);
+	for (let i = 0; i < sidebarIdentity.length; i++) {
+		const char = sidebarIdentity.charCodeAt(i);
+		hash = (hash << 5) - hash + char;
+	}
+	return (hash >>> 0).toString(36).padStart(7, '0');
+}
+
+/** Recurses through a sidebar tree to generate a string concatenating labels and link hrefs. */
+function recursivelyBuildSidebarIdentity(sidebar: SidebarEntry[]): string {
+	return sidebar
+		.flatMap((entry) =>
+			entry.type === 'group'
+				? entry.label + recursivelyBuildSidebarIdentity(entry.entries)
+				: entry.label + entry.href
+		)
+		.join('');
 }
 
 /** Turn the nested tree structure of a sidebar into a flat list of all the links. */
@@ -329,7 +471,7 @@ function applyPrevNextLinkConfig(
 		} else if (config.link && config.label) {
 			// If there is no link and the frontmatter contains both a URL and a label,
 			// create a new link.
-			return makeLink(config.link, config.label, config.link);
+			return makeLink({ href: config.link, label: config.label });
 		}
 	}
 	// Otherwise, if the global config is enabled, return the generated link if any.
@@ -337,4 +479,42 @@ function applyPrevNextLinkConfig(
 }
 
 /** Remove the extension from a path. */
-const stripExtension = (path: string) => path.replace(/\.\w+$/, '');
+function stripExtension(path: string) {
+	const periodIndex = path.lastIndexOf('.');
+	return path.slice(0, periodIndex > -1 ? periodIndex : undefined);
+}
+
+/** Get a sidebar badge for a given item. */
+function getSidebarBadge(
+	config: I18nBadgeConfig,
+	locale: string | undefined,
+	itemLabel: string
+): Badge | undefined {
+	if (!config) return;
+	if (typeof config === 'string') {
+		return { variant: 'default', text: config };
+	}
+	return { ...config, text: getSidebarBadgeText(config.text, locale, itemLabel) };
+}
+
+/** Get the badge text for a sidebar item. */
+function getSidebarBadgeText(
+	text: I18nBadge['text'],
+	locale: string | undefined,
+	itemLabel: string
+): string {
+	if (typeof text === 'string') return text;
+	const defaultLang =
+		config.defaultLocale?.lang || config.defaultLocale?.locale || BuiltInDefaultLocale.lang;
+	const defaultText = text[defaultLang];
+
+	if (!defaultText) {
+		throw new AstroError(
+			`The badge text for "${itemLabel}" must have a key for the default language "${defaultLang}".`,
+			'Update the Starlight config to include a badge text for the default language.\n' +
+				'Learn more about sidebar badges internationalization at https://starlight.astro.build/guides/sidebar/#internationalization-with-badges'
+		);
+	}
+
+	return pickLang(text, localeToLang(locale)) || defaultText;
+}

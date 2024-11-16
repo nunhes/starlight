@@ -3,8 +3,8 @@ title: 侧边栏导航
 description: 了解如何设置和自定义 Starlight 站点的侧边栏导航链接。
 ---
 
-import FileTree from '../../../../components/file-tree.astro';
-import SidebarPreview from '../../../../components/sidebar-preview.astro';
+import { FileTree } from '@astrojs/starlight/components';
+import SidebarPreview from '~/components/sidebar-preview.astro';
 
 一个组织良好的侧边栏是良好文档的关键，因为它是用户浏览你的站点的主要方式之一。Starlight 提供了一整套选项来自定义侧边栏布局和内容。
 
@@ -19,11 +19,11 @@ import SidebarPreview from '../../../../components/sidebar-preview.astro';
 - src/
   - content/
     - docs/
-      - guides/
-        - components.md
-        - i18n.md
-      - reference/
-        - configuration.md
+      - constellations/
+        - andromeda.md
+        - orion.md
+      - stars/
+        - betelgeuse.md
 
 </FileTree>
 
@@ -32,17 +32,15 @@ import SidebarPreview from '../../../../components/sidebar-preview.astro';
 <SidebarPreview
 	config={[
 		{
-			label: 'guides',
+			label: 'constellations',
 			items: [
-				{ label: 'Components', link: '/guides/components/' },
-				{ label: 'Internationalization (i18n)', link: '/guides/i18n/' },
+				{ label: '仙女座', link: '' },
+				{ label: '猎户座', link: '' },
 			],
 		},
 		{
-			label: 'reference',
-			items: [
-				{ label: 'Configuration Reference', link: '/reference/configuration/' },
-			],
+			label: 'stars',
+			items: [{ label: '参宿四', link: '' }],
 		},
 	]}
 />
@@ -51,21 +49,75 @@ import SidebarPreview from '../../../../components/sidebar-preview.astro';
 
 ## 添加链接和链接分组
 
-要配置侧边栏 [链接](#链接) 和 [链接分组](#分组)（在可折叠的标题中），请在 `astro.config.mjs` 中使用 [`starlight.sidebar`](/zh-cn/reference/configuration/#sidebar) 属性。
+要配置侧边栏链接和链接分组（在可折叠的标题中），请在 `astro.config.mjs` 中使用 [`starlight.sidebar`](/zh-cn/reference/configuration/#sidebar) 属性。
 
 结合使用链接和链接分组，你可以创建各种侧边栏布局。
 
-### 链接
+### 内部链接
 
-使用具有 `label` 和 `link` 属性的对象添加一个指向内部或外部页面的链接。
+使用带有 `slug` 属性的对象为 `src/content/docs/` 中的页面添加链接。
+默认情况下，链接页面的标题会被作为标签。
 
-```js
+例如，进行以下的配置：
+
+```js "slug:"
 starlight({
 	sidebar: [
-		// 指向 CSS & Styling 指南的链接
-		{ label: 'CSS & Styling', link: '/zh-cn/guides/css-and-tailwind/' },
-		// 指向 Astro 官网的外部链接
-		{ label: 'Astro', link: 'https://astro.build/' },
+		{ slug: 'constellations/andromeda' },
+		{ slug: 'constellations/orion' },
+	],
+});
+```
+
+并给定以下的文件结构：
+
+<FileTree>
+
+- src/
+  - content/
+    - docs/
+      - constellations/
+        - andromeda.md
+        - orion.md
+
+</FileTree>
+
+那么将会生成如下的侧边栏：
+
+<SidebarPreview
+	config={[
+		{ label: '仙女座', link: '' },
+		{ label: '猎户座', link: '' },
+	]}
+/>
+
+而要想覆盖从链接页面的 frontmatter 所推断出来的值，你可以添加 `label`，[`translations`](#国际化)，以及 [`attrs`](#自定义-html-属性) 属性。
+
+想了解更多通过 frontmatter 控制侧边栏外观的内容，请参阅 [“在 frontmatter 中自定义自动生成的链接”](#在-frontmatter-中自定义自动生成的链接)。
+
+#### 内部链接的简易写法
+
+内部链接也可以通过只提供一个页面标题字符串来指定。
+
+例如，以下的配置等同于上面使用 `slug` 的配置：
+
+```js "slug:"
+starlight({
+	sidebar: ['constellations/andromeda', 'constellations/orion'],
+});
+```
+
+### 其他链接
+
+使用带有 `label` 和 `link` 属性的对象，添加指向外部或非文档页面的链接。
+
+```js "label:" "link:"
+starlight({
+	sidebar: [
+		// 指向网站中非文档页面的链接。
+		{ label: '流星商店', link: '/shop/' },
+		// 指向 NASA 网站的外部链接。
+		{ label: 'NASA', link: 'https://www.nasa.gov/' },
 	],
 });
 ```
@@ -74,8 +126,8 @@ starlight({
 
 <SidebarPreview
 	config={[
-		{ label: 'CSS & Styling', link: '/zh-cn/guides/css-and-tailwind/' },
-		{ label: 'Astro', link: 'https://astro.build/' },
+		{ label: '流星商店', link: '' },
+		{ label: 'NASA', link: 'https://www.nasa.gov/' },
 	]}
 />
 
@@ -88,22 +140,22 @@ starlight({
 `label` 将用作分组的标题。
 将链接或子组添加到 `items` 数组中。
 
-```js
+```js /^\s*(label:|items:)/
 starlight({
 	sidebar: [
-		// 一个名为 "Guides" 的链接分组
+		// 一个名为 "星座" 的链接分组
 		{
-			label: 'Guides',
+			label: '星座',
 			items: [
-				{ label: 'Components', link: '/guides/components/' },
-				{ label: 'Internationalization (i18n)', link: '/guides/i18n/' },
-				// 一个嵌套的链接分组
+				'constellations/carina',
+				'constellations/centaurus',
+				// 星座周期的嵌套链接分组。
 				{
-					label: 'Styling',
+					label: '周期',
 					items: [
-						{ label: 'CSS', link: '/guides/css-and-tailwind/' },
-						{ label: 'Tailwind', link: '/guides/css-and-tailwind/' },
-						{ label: 'Shiki', link: '/guides/css-and-tailwind/' },
+						'constellations/andromeda',
+						'constellations/orion',
+						'constellations/ursa-minor',
 					],
 				},
 			],
@@ -117,16 +169,16 @@ starlight({
 <SidebarPreview
 	config={[
 		{
-			label: 'Guides',
+			label: '星座',
 			items: [
-				{ label: 'Components', link: '/guides/components/' },
-				{ label: 'Internationalization (i18n)', link: '/guides/i18n/' },
+				{ label: '船底座', link: '' },
+				{ label: '半人马座', link: '' },
 				{
-					label: 'Styling',
+					label: '周期',
 					items: [
-						{ label: 'CSS', link: '/guides/css-and-tailwind/' },
-						{ label: 'Tailwind', link: '/guides/css-and-tailwind/' },
-						{ label: 'Shiki', link: '/guides/css-and-tailwind/' },
+						{ label: '仙女座', link: '' },
+						{ label: '猎户座', link: '' },
+						{ label: '小熊座', link: '' },
 					],
 				},
 			],
@@ -136,17 +188,19 @@ starlight({
 
 ### 自动生成的分组
 
-Starlight 可以根据文档目录在侧边栏中自动生成一个分组。当你不想手动输入分组中的每个侧边栏项目时，这很有用。默认情况下，页面将按文档名的字母顺序排序。
+Starlight 可以根据文档目录在侧边栏中自动生成一个分组。当你不想手动输入分组中的每个侧边栏项目时，这很有用。
+
+默认情况下，页面按照文件 [`slug`](/zh-cn/reference/overrides/#slug) 的字母顺序排序。
 
 使用具有 `label` 和 `autogenerate` 属性的对象添加自动生成的分组。`autogenerate` 的配置必须指定用于侧边栏条目的 `directory` 。例如，使用以下配置：
 
-```js
+```js "label:" "autogenerate:"
 starlight({
 	sidebar: [
 		{
-			label: 'Guides',
-			// 自动生成一个链接分组，用于 'guides' 目录。
-			autogenerate: { directory: 'guides' },
+			label: '星座',
+			// 自动生成一个链接分组，用于 '星座' 目录。
+			autogenerate: { directory: 'constellations' },
 		},
 	],
 });
@@ -159,11 +213,11 @@ starlight({
 - src/
   - content/
     - docs/
-      - guides/
-        - components.md
-        - i18n.md
-        - advanced/
-          - project-structure.md
+      - constellations/
+        - carina.md
+        - centaurus.md
+        - seasonal/
+          - andromeda.md
 
 </FileTree>
 
@@ -172,29 +226,28 @@ starlight({
 <SidebarPreview
 	config={[
 		{
-			label: 'Guides',
+			label: '星座',
 			items: [
-				{ label: 'Components', link: '/guides/components/' },
-				{ label: 'Internationalization (i18n)', link: '/guides/i18n/' },
+				{ label: '船底座', link: '' },
+				{ label: '半人马座', link: '' },
 				{
-					label: 'advanced',
-					items: [
-						{ label: 'Project Structure', link: '/guides/project-structure/' },
-					],
+					label: 'seasonal',
+					items: [{ label: '仙女座', link: '' }],
 				},
 			],
 		},
 	]}
 />
 
-#### 在 frontmatter 中自定义自动生成的链接
+## 在 frontmatter 中自定义自动生成的链接
 
 在单个页面中使用 [`sidebar` frontmatter 字段](/zh-cn/reference/frontmatter/#sidebar) 来自定义自动生成的链接。
 
 侧边栏 frontmatter 选项允许你设置 [自定义标签](/zh-cn/reference/frontmatter/#label) 或者为链接添加 [徽章](/zh-cn/reference/frontmatter/#badge)，[隐藏](/zh-cn/reference/frontmatter/#hidden) 侧边栏中的链接，或者定义 [自定义排序权重](/zh-cn/reference/frontmatter/#order)。
 
-```md
+```md "sidebar:"
 ---
+# src/content/docs/example.md
 title: 我的页面
 sidebar:
   # 为链接设置自定义标签
@@ -213,41 +266,46 @@ sidebar:
 <SidebarPreview
 	config={[
 		{
-			label: 'Guides',
+			label: '指南',
 			items: [
-				{ label: '一个页面', link: '#' },
+				{ label: '一个页面', link: '' },
 				{
 					label: '自定义侧边栏 label ',
-					link: '#',
+					link: '',
 					badge: { text: 'New', variant: 'tip' },
 				},
-				{ label: '其他页面', link: '#' },
+				{ label: '其他页面', link: '' },
 			],
 		},
 	]}
 />
 
 :::note
-`sidebar` frontmatter 配置仅用于自动生成的链接，对于手动定义的链接将被忽略。
+`sidebar` frontmatter 配置仅用于自动生成分组中的链接和使用 `slug` 属性定义的文档链接。它并不适用于使用 `link` 属性定义的链接。
 :::
 
 ## 徽章
 
-链接也可以包含一个 `badge` 属性，以在链接标签旁边显示徽章。
+链接、分组、自动生成的分组都可以包含一个 `badge` 属性，以在它们的标签旁边显示徽章。
 
-```js
+```js {9,16}
 starlight({
 	sidebar: [
 		{
-			label: 'Guides',
+			label: '星星',
 			items: [
-				// 带有 "New" 徽章的链接。
+				// 带有 "Supergiant" 徽章的链接。
 				{
-					label: 'Components',
-					link: '/guides/components/',
-					badge: 'New',
+					slug: 'stars/persei',
+					badge: 'Supergiant',
 				},
 			],
+		},
+		// 带有 "Outdated" 徽章的自动生成分组。
+		{
+			label: '卫星',
+			badge: 'Outdated',
+			autogenerate: { directory: 'moons' },
 		},
 	],
 });
@@ -258,36 +316,56 @@ starlight({
 <SidebarPreview
 	config={[
 		{
-			label: 'Guides',
+			label: '星星',
 			items: [
 				{
-					label: 'Components',
-					link: '/guides/components/',
-					badge: { text: 'New', variant: 'default' },
+					label: '英仙座',
+					link: '',
+					badge: { text: '超巨星', variant: 'default' },
+				},
+			],
+		},
+		{
+			label: '卫星',
+			badge: { text: 'Outdated', variant: 'default' },
+			items: [
+				{
+					label: '木卫一',
+					link: '',
+				},
+				{
+					label: '木卫二',
+					link: '',
+				},
+				{
+					label: '木卫三',
+					link: '',
 				},
 			],
 		},
 	]}
 />
 
-### 徽章种类
+### 徽章种类和自定义样式
 
-使用具有 `text` 和 `variant` 属性的对象自定义徽章样式。
+使用具有 `text`、`variant` 和 `class` 属性的对象自定义徽章样式。
 
 `text` 属性表示要显示的内容（例如 "New"）。
-通过将 `variant` 属性设置为以下值之一：`note`、`tip`、`danger`、`caution` 或 `success`，可以覆盖 `default` 样式，默认样式使用你的网站的强调色。
 
-```js
+默认情况下，徽章将使用你的网站的强调色。要使用内置的徽章样式，请将 `variant` 属性设置为以下值之一：`note`、`tip`、`danger`、`caution` 或 `success`。
+
+你还可以通过设置 `class` 属性为一个 CSS 类名来创建自定义的徽章样式。
+
+```js {9}
 starlight({
 	sidebar: [
 		{
-			label: 'Guides',
+			label: '星星',
 			items: [
-				// 一个带有黄色 "Experimental" 徽章的链接。
+				// 一个带有黄色 "Stub" 徽章的链接。
 				{
-					label: 'Components',
-					link: '/guides/components/',
-					badge: { text: 'Experimental', variant: 'caution' },
+					slug: 'stars/sirius',
+					badge: { text: 'Stub', variant: 'caution' },
 				},
 			],
 		},
@@ -300,12 +378,12 @@ starlight({
 <SidebarPreview
 	config={[
 		{
-			label: 'Guides',
+			label: '星星',
 			items: [
 				{
-					label: 'Components',
-					link: '/guides/components/',
-					badge: { text: 'Experimental', variant: 'caution' },
+					label: '天狼星',
+					link: '',
+					badge: { text: 'Stub', variant: 'caution' },
 				},
 			],
 		},
@@ -318,16 +396,16 @@ starlight({
 
 在下面的例子中，通过 `attrs` 添加了一个 `target="_blank"` 属性，使得链接在新标签页中打开，并应用了一个自定义的 `style` 属性使链接标签变为斜体：
 
-```js
+```js {10}
 starlight({
 	sidebar: [
 		{
-			label: 'Guides',
+			label: '资源',
 			items: [
-				// 一个指向 Astro 文档的在新标签页打开的外部链接。
+				// 一个指向 NASA 网站的在新标签页打开的外部链接。
 				{
-					label: 'Astro Docs',
-					link: 'https://docs.astro.build/',
+					label: 'NASA',
+					link: 'https://www.nasa.gov/',
 					attrs: { target: '_blank', style: 'font-style: italic' },
 				},
 			],
@@ -341,11 +419,11 @@ starlight({
 <SidebarPreview
 	config={[
 		{
-			label: 'Guides',
+			label: '资源',
 			items: [
 				{
-					label: 'Astro Docs',
-					link: 'https://docs.astro.build/',
+					label: 'NASA',
+					link: 'https://www.nasa.gov/',
 					attrs: {
 						target: '_blank',
 						style: 'font-style: italic',
@@ -362,28 +440,28 @@ starlight({
 
 `label` 属性将用于默认语言和没有翻译的语言。
 
-```js
+```js {5-7,11-13,18-20}
 starlight({
 	sidebar: [
 		{
-			label: 'Guides',
+			label: '星座',
 			translations: {
-				'zh-CN': '指南',
+				'pt-BR': 'Constelações',
 			},
 			items: [
 				{
-					label: 'Components',
+					label: '仙女座',
 					translations: {
-						'zh-CN': '组件',
+						'pt-BR': 'Andrômeda',
 					},
-					link: '/zh-cn/guides/components/',
+					slug: 'constellations/andromeda',
 				},
 				{
-					label: 'Internationalization (i18n)',
+					label: '天蝎座',
 					translations: {
-						'zh-CN': '国际化 (i18n)',
+						'pt-BR': 'Escorpião',
 					},
-					link: '/zh-cn/guides/i18n/',
+					slug: 'constellations/scorpius',
 				},
 			],
 		},
@@ -391,15 +469,99 @@ starlight({
 });
 ```
 
-浏览简体中文文档将生成以下侧边栏：
+浏览巴西葡萄牙语文档将生成以下侧边栏：
 
 <SidebarPreview
 	config={[
 		{
-			label: '指南',
+			label: 'Constelação',
 			items: [
-				{ label: '组件', link: '/zh-cn/guides/components/' },
-				{ label: '国际化 (i18n)', link: '/zh-cn/guides/i18n/' },
+				{ label: 'Andrômeda', link: '' },
+				{ label: 'Escorpião', link: '' },
+			],
+		},
+	]}
+/>
+
+### 通过内部链接实现国际化
+
+默认情况下，[内部链接](#内部链接)将从 frontmatter 自动使用翻译页面的标题：
+
+```js {9-10}
+starlight({
+	sidebar: [
+		{
+			label: '星座',
+			translations: {
+				'pt-BR': 'Constelações',
+			},
+			items: [
+				{ slug: 'constellations/andromeda' },
+				{ slug: 'constellations/scorpius' },
+			],
+		},
+	],
+});
+```
+
+浏览巴西葡萄牙语文档将生成以下侧边栏：
+
+<SidebarPreview
+	config={[
+		{
+			label: 'Constelações',
+			items: [
+				{ label: 'Andrômeda', link: '' },
+				{ label: 'Escorpião', link: '' },
+			],
+		},
+	]}
+/>
+
+在多语言网站中，`slug` 的值不会包含 URL 的语言部分。
+例如，如果页面位于 `en/intro` 和 `pt-br/intro`，则在配置侧边栏时，slug 为 `intro`。
+
+### 通过徽章实现国际化
+
+对于[徽章](#徽章)，`text` 属性可以是字符串，而对于多语言网站，文本属性则可以是具有每个不同区域设置值的对象。
+使用对象形式时，键必须是 [BCP-47](https://www.w3.org/International/questions/qa-choosing-language-tags) 标签（例如 `en`、`ar` 或 `zh-CN`）：
+
+```js {11-16}
+starlight({
+	sidebar: [
+		{
+			label: '星座',
+			translations: {
+				'pt-BR': 'Constelações',
+			},
+			items: [
+				{
+					slug: 'constellations/andromeda',
+					badge: {
+						text: {
+							'zh-CN': '新',
+							'pt-BR': 'Novo',
+						},
+					},
+				},
+			],
+		},
+	],
+});
+```
+
+浏览巴西葡萄牙语文档将生成以下侧边栏：
+
+<SidebarPreview
+	config={[
+		{
+			label: 'Constelações',
+			items: [
+				{
+					label: 'Andrômeda',
+					link: '',
+					badge: { text: 'Novo', variant: 'default' },
+				},
 			],
 		},
 	]}
@@ -409,17 +571,14 @@ starlight({
 
 链接分组可以通过将 `collapsed` 属性设置为 `true` 来默认折叠。
 
-```js
+```js {5-6}
 starlight({
 	sidebar: [
 		{
-			label: 'Guides',
+			label: '星座',
 			// 默认折叠分组
 			collapsed: true,
-			items: [
-				{ label: 'Components', link: '/guides/components/' },
-				{ label: 'Internationalization (i18n)', link: '/guides/i18n/' },
-			],
+			items: ['constellations/andromeda', 'constellations/orion'],
 		},
 	],
 });
@@ -430,11 +589,11 @@ starlight({
 <SidebarPreview
 	config={[
 		{
-			label: 'Guides',
+			label: '星座',
 			collapsed: true,
 			items: [
-				{ label: 'Components', link: '/guides/components/' },
-				{ label: 'Internationalization (i18n)', link: '/guides/i18n/' },
+				{ label: '仙女座', link: '' },
+				{ label: '猎户座', link: '' },
 			],
 		},
 	]}
@@ -442,14 +601,14 @@ starlight({
 
 [自动生成的分组](#自动生成的分组) 遵循其父级分组的 `collapsed` 值：
 
-```js
+```js {5-6}
 starlight({
 	sidebar: [
 		{
-			label: 'Guides',
+			label: '星座',
 			// 默认折叠分组及其自动生成的子组。
 			collapsed: true,
-			autogenerate: { directory: 'guides' },
+			autogenerate: { directory: 'constellations' },
 		},
 	],
 });
@@ -460,17 +619,15 @@ starlight({
 <SidebarPreview
 	config={[
 		{
-			label: 'Guides',
+			label: '星座',
 			collapsed: true,
 			items: [
-				{ label: 'Components', link: '/guides/components/' },
-				{ label: 'Internationalization (i18n)', link: '/guides/i18n/' },
+				{ label: '船底座', link: '' },
+				{ label: '半人马座', link: '' },
 				{
-					label: 'advanced',
+					label: 'seasonal',
 					collapsed: true,
-					items: [
-						{ label: 'Project Structure', link: '/guides/project-structure/' },
-					],
+					items: [{ label: '仙女座', link: '' }],
 				},
 			],
 		},
@@ -479,14 +636,14 @@ starlight({
 
 这个行为可以通过定义 `autogenerate.collapsed` 属性来覆盖。
 
-```js
+```js {5-7} "collapsed: true"
 starlight({
 	sidebar: [
 		{
-			label: 'Guides',
-			// 不折叠 "Guides" 分组，但折叠其自动生成的子组。
+			label: '星座',
+			// 不折叠 "星座" 分组，但折叠其自动生成的子组。
 			collapsed: false,
-			autogenerate: { directory: 'guides', collapsed: true },
+			autogenerate: { directory: 'Constellations', collapsed: true },
 		},
 	],
 });
@@ -497,16 +654,14 @@ starlight({
 <SidebarPreview
 	config={[
 		{
-			label: 'Guides',
+			label: '星座',
 			items: [
-				{ label: 'Components', link: '/guides/components/' },
-				{ label: 'Internationalization (i18n)', link: '/guides/i18n/' },
+				{ label: '船底座', link: '' },
+				{ label: '半人马座', link: '' },
 				{
-					label: 'advanced',
+					label: 'seasonal',
 					collapsed: true,
-					items: [
-						{ label: 'Project Structure', link: '/guides/project-structure/' },
-					],
+					items: [{ label: '仙女座', link: '' }],
 				},
 			],
 		},

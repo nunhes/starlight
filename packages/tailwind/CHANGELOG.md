@@ -1,5 +1,23 @@
 # @astrojs/starlight-tailwind
 
+## 2.0.3
+
+### Patch Changes
+
+- [#1906](https://github.com/withastro/starlight/pull/1906) [`b079ae11`](https://github.com/withastro/starlight/commit/b079ae114c49bf0570a142b94997bcc0828c47e0) Thanks [@delucis](https://github.com/delucis)! - Fixes default `font-family` in non-Starlight pages when using Tailwind plugin
+
+## 2.0.2
+
+### Patch Changes
+
+- [#1726](https://github.com/withastro/starlight/pull/1726) [`1aae51ac`](https://github.com/withastro/starlight/commit/1aae51ac512df8de088c7529236e196be42077e8) Thanks [@delucis](https://github.com/delucis)! - Adds warning log if a user tries to set `colors.white` in their Tailwind theme config with an object instead of a string.
+
+## 2.0.1
+
+### Patch Changes
+
+- [#903](https://github.com/withastro/starlight/pull/903) [`232f512`](https://github.com/withastro/starlight/commit/232f51207fe97880760fba25351cdc65b20f4c67) Thanks [@torn4dom4n](https://github.com/torn4dom4n)! - Show `tailwind.config.mjs` file in docs
+
 ## 2.0.0
 
 ### Major Changes

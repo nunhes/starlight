@@ -5,7 +5,7 @@ description: 既存のAstroプロジェクトにStarlightを追加するため�
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-[入門](/ja/getting-started/#新しいプロジェクトを作成する)で述べたように、新しいStarlightサイトを作成する最も簡単な方法は、`create astro`を使用することです。このガイドでは、既存のAstroプロジェクトにStarlightを追加する方法について説明します。
+[入門](/ja/getting-started/#新しいプロジェクトの作成)で述べたように、新しいStarlightサイトを作成する最も簡単な方法は、`create astro`を使用することです。このガイドでは、既存のAstroプロジェクトにStarlightを追加する方法について説明します。
 
 ## Starlightをセットアップする
 
@@ -15,7 +15,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 Starlightは[Astroのインテグレーション](https://docs.astro.build/ja/guides/integrations-guide/)です。プロジェクトのルートディレクトリで`astro add`コマンドを実行してサイトに追加します。
 
-<Tabs>
+<Tabs syncKey="pkg">
     <TabItem label="npm">
         ```sh
         npx astro add starlight
@@ -43,7 +43,7 @@ Starlightインテグレーションの設定は、`astro.config.mjs`ファイ�
 
 まずは`title`を追加してみましょう。
 
-```js {7-9}
+```js ins={8}
 // astro.config.mjs
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
@@ -103,7 +103,7 @@ Starlightのすべてのページをサブパスに追加するには、ドキ�
 
 たとえば、Starlightのページがすべて`/guides/`で始まる場合は、コンテンツを`src/content/docs/guides/`ディレクトリに追加します。
 
-import FileTree from '../../../components/file-tree.astro';
+import { FileTree } from '@astrojs/starlight/components';
 
 <FileTree>
 
@@ -122,4 +122,6 @@ import FileTree from '../../../components/file-tree.astro';
 
 ### StarlightとSSR
 
-現在、StarlightはAstroのサーバーアダプタを使用した[SSRデプロイ](https://docs.astro.build/ja/guides/server-side-rendering/)をサポートしていません。近いうちにサポートできるようにしたいと考えています。
+SSRを有効にするには、Astroドキュメントの「[オンデマンドレンダリングアダプター](https://docs.astro.build/ja/guides/server-side-rendering/)」ガイドに従い、Starlightプロジェクトにサーバーアダプターを追加します。
+
+Starlightによって生成されるドキュメントページは、プロジェクトの出力モードに関係なくデフォルトでプリレンダリングされます。Starlightページのプリレンダリングを無効にするには、[`prerender`設定オプション](/ja/reference/configuration/#prerender)を`false`に設定します。

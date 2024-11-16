@@ -1,4 +1,7 @@
 import config from 'virtual:starlight/user-config';
+import { BuiltInDefaultLocale } from './i18n';
+import { stripTrailingSlash } from './path';
+import { slugToLocale as getLocaleFromSlug } from '../integrations/shared/slugToLocale';
 
 export interface LocaleData {
 	/** Writing direction. */
@@ -16,10 +19,7 @@ export interface LocaleData {
  * @param slug A collection entry slug
  */
 function slugToLocale(slug: string): string | undefined {
-	const locales = Object.keys(config.locales || {});
-	const baseSegment = slug.split('/')[0];
-	if (baseSegment && locales.includes(baseSegment)) return baseSegment;
-	return undefined;
+	return getLocaleFromSlug(slug, config);
 }
 
 /** Get locale information for a given slug. */
@@ -35,7 +35,7 @@ export function slugToLocaleData(slug: string): LocaleData {
 export function localeToLang(locale: string | undefined): string {
 	const lang = locale ? config.locales?.[locale]?.lang : config.locales?.root?.lang;
 	const defaultLang = config.defaultLocale?.lang || config.defaultLocale?.locale;
-	return lang || defaultLang || 'en';
+	return lang || defaultLang || BuiltInDefaultLocale.lang;
 }
 
 /**
@@ -51,8 +51,8 @@ export function slugToParam(slug: string): string | undefined {
 	return slug === 'index' || slug === ''
 		? undefined
 		: slug.endsWith('/index')
-		? slug.replace(/\/index$/, '')
-		: slug;
+			? slug.slice(0, -6)
+			: slug;
 }
 
 export function slugToPathname(slug: string): string {
@@ -76,7 +76,7 @@ export function localizedSlug(slug: string, locale: string | undefined): string 
 	locale = locale || '';
 	if (slugLocale === slug) return locale;
 	if (slugLocale) {
-		return slug.replace(slugLocale + '/', locale ? locale + '/' : '').replace(/\/$/, '');
+		return stripTrailingSlash(slug.replace(slugLocale + '/', locale ? locale + '/' : ''));
 	}
 	return slug ? locale + '/' + slug : locale;
 }
@@ -100,4 +100,22 @@ export function localizedId(id: string, locale: string | undefined): string {
 	} else {
 		return id;
 	}
+}
+
+/** Extract the slug from a URL. */
+export function urlToSlug(url: URL): string {
+	let pathname = url.pathname;
+	const base = stripTrailingSlash(import.meta.env.BASE_URL);
+	if (pathname.startsWith(base)) pathname = pathname.replace(base, '');
+	const segments = pathname.split('/');
+	const htmlExt = '.html';
+	if (segments.at(-1) === 'index.html') {
+		// Remove trailing `index.html`.
+		segments.pop();
+	} else if (segments.at(-1)?.endsWith(htmlExt)) {
+		// Remove trailing `.html`.
+		const last = segments.pop();
+		if (last) segments.push(last.slice(0, -1 * htmlExt.length));
+	}
+	return segments.filter(Boolean).join('/');
 }

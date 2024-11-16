@@ -16,7 +16,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 Starlight 是一个 [Astro 集成](https://docs.astro.build/zh-cn/guides/integrations-guide/)。通过在项目的根目录中运行 `astro add` 命令将其添加到你的站点中：
 
-<Tabs>
+<Tabs syncKey="pkg">
     <TabItem label="npm">
         ```sh
         npx astro add starlight
@@ -44,7 +44,7 @@ Starlight 集成在 `astro.config.mjs` 文件中配置。
 
 添加一个 `title` 以开始：
 
-```js {7-9}
+```js ins={8}
 // astro.config.mjs
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
@@ -105,7 +105,7 @@ Starlight 使用基于文件的路由，这意味着 `src/content/docs/` 中的�
 
 例如，如果 Starlight 页面都应该以 `/guides/` 开头，请将内容添加到 `src/content/docs/guides/` 目录中：
 
-import FileTree from '../../../components/file-tree.astro';
+import { FileTree } from '@astrojs/starlight/components';
 
 <FileTree>
 
@@ -124,4 +124,6 @@ import FileTree from '../../../components/file-tree.astro';
 
 ### 结合 SSR 使用 Starlight
 
-目前，Starlight 不支持使用 Astro 的服务器适配器进行 [SSR 部署](https://docs.astro.build/zh-cn/guides/server-side-rendering/) 。我们希望能够尽快支持这一点。
+要启用 SSR，请按照 Astro 文档中的 [“按需渲染适配器”](https://docs.astro.build/zh-cn/guides/server-side-rendering/) 指南将服务器适配器添加到你的 Starlight 项目中。
+
+无论项目的输出模式如何，Starlight 生成的文档页面都默认为预渲染。要选择不对 Starlight 页面进行预渲染，请将 [`prerender` 配置选项](/zh-cn/reference/configuration/#prerender) 设置为 `false`。

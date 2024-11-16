@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import translations from '../../translations';
 import { useTranslations } from '../../utils/translations';
 
@@ -22,17 +22,17 @@ describe('useTranslations()', () => {
 		expect(t('page.editLink')).toBe(translations.en?.['page.editLink']);
 	});
 
-	test('returns a pick method for filtering by key', () => {
-		const t = useTranslations('en');
-		expect(t.pick('tableOfContents.')).toEqual({
-			'tableOfContents.onThisPage': 'On this page',
-			'tableOfContents.overview': 'Overview',
-		});
-	});
-
 	test('uses built-in translations for regional variants', () => {
-		const t = useTranslations('pt-br');
+		const t = useTranslations('pt-BR');
 		expect(t('page.nextLink')).toBe(translations.pt?.['page.nextLink']);
 		expect(t('page.nextLink')).not.toBe(translations.en?.['page.nextLink']);
+	});
+});
+
+describe('t.dir()', async () => {
+	test('returns text directions', () => {
+		expect(useTranslations(undefined).dir()).toBe('ltr');
+		expect(useTranslations('fr').dir()).toBe('ltr');
+		expect(useTranslations('ar').dir()).toBe('rtl');
 	});
 });

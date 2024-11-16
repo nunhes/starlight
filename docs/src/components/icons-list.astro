@@ -2,10 +2,18 @@
 import { Icon } from '@astrojs/starlight/components';
 import { Icons } from '../../../packages/starlight/components/Icons';
 
+interface Props {
+	labels?: {
+		copied?: string;
+	};
+}
+
+const { copied = 'Copied!' } = Astro.props.labels ?? {};
+
 const icons = Object.keys(Icons) as (keyof typeof Icons)[];
 ---
 
-<div class="icons-grid">
+<div class="icons-grid" data-label-copied={copied}>
 	{
 		icons.map((icon) => {
 			return (
@@ -19,16 +27,16 @@ const icons = Object.keys(Icons) as (keyof typeof Icons)[];
 </div>
 
 <script>
+	const copiedLabel = document.querySelector<HTMLDivElement>('.icons-grid')?.dataset.labelCopied!;
 	const icons = document.querySelectorAll<HTMLButtonElement>('.icon-preview');
 	icons.forEach((icon) => {
 		icon.addEventListener('click', () => {
 			const iconName = icon.dataset.name!;
-			const copiedValue = `<Icon name="${iconName}" />`;
-			navigator.clipboard.writeText(copiedValue);
+			navigator.clipboard.writeText(iconName);
 
 			const iconLabel = icon.querySelector('[aria-live]');
 			if (iconLabel) {
-				iconLabel.textContent = 'Copied!';
+				iconLabel.textContent = copiedLabel;
 				setTimeout(() => {
 					iconLabel.textContent = iconName;
 				}, 1000);
@@ -54,6 +62,7 @@ const icons = Object.keys(Icons) as (keyof typeof Icons)[];
 		font-size: var(--sl-text-sm);
 		gap: 0.25rem;
 		margin: 0;
+		overflow-wrap: anywhere;
 		padding: 0.75rem;
 		background: none;
 	}

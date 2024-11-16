@@ -14,12 +14,14 @@ vi.mock('astro:content', async () =>
 			['en/guides/authoring-content.md', { title: 'Création de contenu en Markdown' }],
 			// @ts-expect-error — Using a slug not present in Starlight docs site
 			['en/404.md', { title: 'Page introuvable' }],
+			['it/index.mdx', { title: 'Pagina iniziale' }],
+			['404.md', { title: '404' }],
 		],
 	})
 );
 
 test('test suite is using correct env', () => {
-	expect(config.title).toBe('i18n with no root locale');
+	expect(config.title).toMatchObject({ 'en-US': 'i18n with no root locale' });
 });
 
 test('routes includes fallback entries for untranslated pages', () => {
@@ -42,6 +44,14 @@ test('routes have locale data added', () => {
 			expect(lang).toBe('fr');
 			expect(dir).toBe('ltr');
 			expect(locale).toBe('fr');
+		} else if (id.startsWith('pt-br')) {
+			expect(lang).toBe('pt-BR');
+			expect(dir).toBe('ltr');
+			expect(locale).toBe('pt-br');
+		} else {
+			expect(lang).toBe('en-US');
+			expect(dir).toBe('ltr');
+			expect(locale).toBe('en');
 		}
 	}
 });

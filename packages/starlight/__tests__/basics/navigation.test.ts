@@ -6,9 +6,9 @@ vi.mock('astro:content', async () =>
 		docs: [
 			['index.mdx', { title: 'Home Page' }],
 			['environmental-impact.md', { title: 'Eco-friendly docs' }],
-			['guides/authoring-content.md', { title: 'Authoring Markdown' }],
+			['guides/authoring-content.mdx', { title: 'Authoring Markdown' }],
 			['reference/frontmatter.md', { title: 'Frontmatter Reference', sidebar: { hidden: true } }],
-			['guides/components.mdx', { title: 'Components' }],
+			['guides/project-structure.mdx', { title: 'Project Structure' }],
 		],
 	})
 );
@@ -34,6 +34,7 @@ describe('getSidebar', () => {
 			    "type": "link",
 			  },
 			  {
+			    "badge": undefined,
 			    "collapsed": false,
 			    "entries": [
 			      {
@@ -47,9 +48,9 @@ describe('getSidebar', () => {
 			      {
 			        "attrs": {},
 			        "badge": undefined,
-			        "href": "/guides/components/",
+			        "href": "/guides/project-structure/",
 			        "isCurrent": false,
-			        "label": "Components",
+			        "label": "Project Structure",
 			        "type": "link",
 			      },
 			    ],
@@ -60,9 +61,9 @@ describe('getSidebar', () => {
 		`);
 	});
 
-	test('marks current path with isCurrent', () => {
-		const paths = ['/', '/environmental-impact/', '/guides/authoring-content/'];
-		for (const currentPath of paths) {
+	test.each(['/', '/environmental-impact/', '/guides/authoring-content/'])(
+		'marks current path with isCurrent: %s',
+		(currentPath) => {
 			const items = flattenSidebar(getSidebar(currentPath, undefined));
 			const currentItems = items.filter((item) => item.type === 'link' && item.isCurrent);
 			expect(currentItems).toHaveLength(1);
@@ -70,13 +71,24 @@ describe('getSidebar', () => {
 			if (currentItem?.type !== 'link') throw new Error('Expected current item to be link');
 			expect(currentItem.href).toBe(currentPath);
 		}
-	});
+	);
 
 	test('ignore trailing slashes when marking current path with isCurrent', () => {
-		const pathWithoutTrailingSlash = '/environmental-impact';
-		const items = flattenSidebar(getSidebar(pathWithoutTrailingSlash, undefined));
+		const pathWithTrailingSlash = '/environmental-impact/';
+		const items = flattenSidebar(getSidebar(pathWithTrailingSlash, undefined));
 		const currentItems = items.filter((item) => item.type === 'link' && item.isCurrent);
-		expect(currentItems).toMatchObject([{ href: `${pathWithoutTrailingSlash}/`, type: 'link' }]);
+		expect(currentItems).toMatchInlineSnapshot(`
+			[
+			  {
+			    "attrs": {},
+			    "badge": undefined,
+			    "href": "/environmental-impact/",
+			    "isCurrent": true,
+			    "label": "Eco-friendly docs",
+			    "type": "link",
+			  },
+			]
+		`);
 	});
 
 	test('nests files in subdirectory in group when autogenerating', () => {
@@ -92,6 +104,24 @@ describe('getSidebar', () => {
 		const sidebar = getSidebar('/', undefined);
 		const homeLink = sidebar.find((item) => item.type === 'link' && item.href === '/');
 		expect(homeLink?.label).toBe('Home Page');
+	});
+
+	test('uses cached intermediate sidebars', async () => {
+		// Reset the modules registry so that re-importing `utils/navigation.ts` re-evaluates the
+		// module and clears the cache of intermediate sidebars from previous tests in this file.
+		vi.resetModules();
+		const navigation = await import('../../utils/navigation');
+		const routing = await import('../../utils/routing');
+
+		const getLocaleRoutes = vi.spyOn(routing, 'getLocaleRoutes');
+
+		navigation.getSidebar('/', undefined);
+		navigation.getSidebar('/environmental-impact/', undefined);
+		navigation.getSidebar('/guides/authoring-content/', undefined);
+
+		expect(getLocaleRoutes).toHaveBeenCalledOnce();
+
+		getLocaleRoutes.mockRestore();
 	});
 });
 
@@ -133,9 +163,9 @@ describe('flattenSidebar', () => {
 			  {
 			    "attrs": {},
 			    "badge": undefined,
-			    "href": "/guides/components/",
+			    "href": "/guides/project-structure/",
 			    "isCurrent": false,
-			    "label": "Components",
+			    "label": "Project Structure",
 			    "type": "link",
 			  },
 			]
@@ -182,7 +212,7 @@ describe('getPrevNextLinks', () => {
 	});
 
 	test('returns no next link for last item', () => {
-		const sidebar = getSidebar('/guides/components/', undefined);
+		const sidebar = getSidebar('/guides/project-structure/', undefined);
 		const links = getPrevNextLinks(sidebar, true, {});
 		expect(links.next).toBeUndefined();
 	});
@@ -242,7 +272,7 @@ describe('getPrevNextLinks', () => {
 		expect(withDefaults.prev).toBeUndefined();
 		expect(withCustomLinks.prev).toEqual({
 			type: 'link',
-			href: '/x/',
+			href: 'x',
 			label: 'X',
 			isCurrent: false,
 			attrs: {},

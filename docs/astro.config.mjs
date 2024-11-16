@@ -1,5 +1,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightLinksValidator from 'starlight-links-validator';
+import markdocGrammar from './grammars/markdoc.tmLanguage.json';
 
 export const locales = {
 	root: { label: 'English', lang: 'en' },
@@ -12,15 +14,25 @@ export const locales = {
 	id: { label: 'Bahasa Indonesia', lang: 'id' },
 	'zh-cn': { label: '简体中文', lang: 'zh-CN' },
 	'pt-br': { label: 'Português do Brasil', lang: 'pt-BR' },
+	'pt-pt': { label: 'Português', lang: 'pt-PT' },
 	ko: { label: '한국어', lang: 'ko' },
 	tr: { label: 'Türkçe', lang: 'tr' },
 	ru: { label: 'Русский', lang: 'ru' },
+	hi: { label: 'हिंदी', lang: 'hi' },
+	da: { label: 'Dansk', lang: 'da' },
+	uk: { label: 'Українська', lang: 'uk' },
 };
 
-const site = 'https://starlight.astro.build/';
+/* https://docs.netlify.com/configure-builds/environment-variables/#read-only-variables */
+const NETLIFY_PREVIEW_SITE = process.env.CONTEXT !== 'production' && process.env.DEPLOY_PRIME_URL;
+
+const site = NETLIFY_PREVIEW_SITE || 'https://starlight.astro.build/';
+const ogUrl = new URL('og.jpg?v=1', site).href;
+const ogImageAlt = 'Make your docs shine with Starlight';
 
 export default defineConfig({
 	site,
+	trailingSlash: 'always',
 	integrations: [
 		starlight({
 			title: 'Starlight',
@@ -47,14 +59,14 @@ export default defineConfig({
 				},
 				{
 					tag: 'meta',
-					attrs: { property: 'og:image', content: site + 'og.jpg?v=1' },
+					attrs: { property: 'og:image', content: ogUrl },
 				},
 				{
 					tag: 'meta',
-					attrs: { property: 'twitter:image', content: site + 'og.jpg?v=1' },
+					attrs: { property: 'og:image:alt', content: ogImageAlt },
 				},
 			],
-			customCss: process.env.NO_GRADIENTS ? [] : ['./src/assets/landing.css'],
+			customCss: ['./src/assets/landing.css'],
 			locales,
 			sidebar: [
 				{
@@ -69,9 +81,12 @@ export default defineConfig({
 						id: 'Mulai dari sini',
 						'zh-CN': '从这里开始',
 						'pt-BR': 'Comece Aqui',
+						'pt-PT': 'Comece Aqui',
 						ko: '여기서부터',
 						tr: 'Buradan Başlayın',
-						ru: 'Начать отсюда',
+						ru: 'Первые шаги',
+						hi: 'यहाँ से शुरू करे',
+						uk: 'Почніть звідси',
 					},
 					items: [
 						{
@@ -112,7 +127,7 @@ export default defineConfig({
 						},
 						{
 							label: 'Environmental Impact',
-							link: 'environmental-impact',
+							slug: 'environmental-impact',
 							translations: {
 								de: 'Umweltbelastung',
 								es: 'Documentación ecológica',
@@ -123,6 +138,7 @@ export default defineConfig({
 								id: 'Dampak terhadap lingkungan',
 								'zh-CN': '环境影响',
 								'pt-BR': 'Impacto Ambiental',
+								'pt-PT': 'Impacto Ambiental',
 								ko: '환경적 영향',
 								tr: 'Çevre Etkisi',
 								ru: 'Влияние на окружающую среду',
@@ -158,16 +174,32 @@ export default defineConfig({
 						id: 'Panduan',
 						'zh-CN': '指南',
 						'pt-BR': 'Guias',
+						'pt-PT': 'Guias',
 						ko: '가이드',
 						tr: 'Rehber',
 						ru: 'Руководства',
+						hi: 'गाइड',
+						uk: 'Ґайди',
 					},
 					autogenerate: { directory: 'guides' },
 				},
 				{
+					label: 'Components',
+					translations: {
+						de: 'Komponenten',
+						fr: 'Composants',
+						ru: 'Компоненты',
+						ko: '컴포넌트',
+						ja: 'コンポーネント',
+						'zh-CN': '组件',
+						uk: 'Компоненти',
+					},
+					autogenerate: { directory: 'components' },
+				},
+				{
 					label: 'Reference',
 					translations: {
-						de: 'Referenz',
+						de: 'Referenzen',
 						es: 'Referencias',
 						gl: 'Referenzas',
 						ja: 'リファレンス',
@@ -179,11 +211,36 @@ export default defineConfig({
 						ko: '참조',
 						tr: 'Referanslar',
 						ru: 'Справочник',
+						hi: 'संदर्भ',
+						uk: 'Довідник',
 					},
 					autogenerate: { directory: 'reference' },
 				},
+				{
+					label: 'Resources',
+					translations: {
+						de: 'Ressourcen',
+						'zh-CN': '资源',
+						fr: 'Ressources',
+						'pt-BR': 'Recursos',
+						'pt-PT': 'Recursos',
+						ja: 'リソース',
+						ru: 'Ресурсы',
+						ko: '리소스',
+						uk: 'Ресурси',
+					},
+					autogenerate: { directory: 'resources' },
+				},
 			],
-			lastUpdated: true,
+			expressiveCode: { shiki: { langs: [markdocGrammar] } },
+			plugins: process.env.CHECK_LINKS
+				? [
+						starlightLinksValidator({
+							errorOnFallbackPages: false,
+							errorOnInconsistentLocale: true,
+						}),
+					]
+				: [],
 		}),
 	],
 });
