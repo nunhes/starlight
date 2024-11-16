@@ -1,0 +1,53 @@
+---
+title: Escaparate de Starlight
+description: Descubre sitios creados con Starlight e ferramentas comunitarias que estenden Starlight!
+---
+
+:::tip[Engade o teu!]
+Creaches un sitio Starlight ou unha ferramenta para Starlight?
+Abre un PR engadindo unha ligazón a esta páxina!
+:::
+
+## Sitios
+
+import ShowcaseSites from '../../../components/showcase-sites.astro';
+
+Starlight xa se está a empregar en produción. Estes son algúns dos sitios na web:
+
+<ShowcaseSites />
+
+Consulta tódolos [repositorios públicos de proxectos que usan Starlight en GitHub](https://github.com/withastro/starlight/network/dependents).
+
+## Complementos da comunidade
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Estas ferramentas, complementos e integracións da comunidade traballan xunto a Starlight para ampliar a súa funcionalidade.
+
+<CardGrid>
+	<LinkCard
+		href="https://www.feelback.dev/blog/new-astro-starlight-integration/"
+		title="FeelBack"
+		description="Engade un sistema de comentarios dos usuarios ás túas páxinas de documentos."
+	/>
+	<LinkCard
+		href="https://github.com/HiDeoo/starlight-blog"
+		title="starlight-blog"
+		description="Engade un blog ao teu sitio de documentación."
+	/>
+	<LinkCard
+		href="https://github.com/HiDeoo/starlight-links-validator"
+		title="starlight-links-validator"
+		description="Busca ligazóns rotas nas túas páxinas Starlight."
+	/>
+	<LinkCard
+		href="https://github.com/HiDeoo/starlight-typedoc"
+		title="starlight-typedoc"
+		description="Xera páxinas Starlight a partir de TypeScript usando TypeDoc."
+	/>
+	<LinkCard
+		href="https://github.com/HiDeoo/starlight-openapi"
+		title="starlight-openapi"
+		description="Crea páxinas de documentación a partir das especificacións OpenAPI/Swagger."
+	/>
+</CardGrid>

@@ -1,0 +1,1 @@
+- `/starlight` traducir docs

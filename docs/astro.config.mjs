@@ -5,6 +5,7 @@ export const locales = {
 	root: { label: 'English', lang: 'en' },
 	de: { label: 'Deutsch', lang: 'de' },
 	es: { label: 'Español', lang: 'es' },
+	gl: { label: 'Galego', lang: 'gl' },
 	ja: { label: '日本語', lang: 'ja' },
 	fr: { label: 'Français', lang: 'fr' },
 	it: { label: 'Italiano', lang: 'it' },
@@ -61,6 +62,7 @@ export default defineConfig({
 					translations: {
 						de: 'Beginne hier',
 						es: 'Comienza aqui',
+						gl: 'Comeza aquí',
 						ja: 'ここからはじめる',
 						fr: 'Commencez ici',
 						it: 'Inizia qui',
@@ -78,6 +80,7 @@ export default defineConfig({
 							translations: {
 								de: 'Erste Schritte',
 								es: 'Empezando',
+								gl: 'Comezando',
 								ja: '入門',
 								fr: 'Mise en route',
 								it: 'Iniziamo',
@@ -95,6 +98,7 @@ export default defineConfig({
 							translations: {
 								de: 'Manuelle Einrichtung',
 								es: 'Configuración Manual',
+								gl: 'Configuración Manual',
 								ja: '手動セットアップ',
 								fr: 'Installation manuelle',
 								// it: 'Manual Setup',
@@ -112,6 +116,7 @@ export default defineConfig({
 							translations: {
 								de: 'Umweltbelastung',
 								es: 'Documentación ecológica',
+								gl: 'Impacto ecolóxico',
 								ja: '環境への負荷',
 								fr: 'Impact environnemental',
 								it: 'Impatto ambientale',
@@ -129,6 +134,7 @@ export default defineConfig({
 							translations: {
 								de: 'Schaufenster',
 								// es: '',
+								// gl: '',
 								ja: 'ショーケース',
 								fr: 'Vitrine',
 								// it: '',
@@ -145,6 +151,7 @@ export default defineConfig({
 					translations: {
 						de: 'Anleitungen',
 						es: 'Guías',
+						gl: 'Guías',
 						ja: 'ガイド',
 						fr: 'Guides',
 						it: 'Guide',
@@ -162,6 +169,7 @@ export default defineConfig({
 					translations: {
 						de: 'Referenz',
 						es: 'Referencias',
+						gl: 'Referenzas',
 						ja: 'リファレンス',
 						fr: 'Référence',
 						it: 'Riferimenti',

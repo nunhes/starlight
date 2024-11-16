@@ -1,0 +1,62 @@
+---
+title: Starlight 🌟 Crea sitios de documentación con Astro
+head:
+  - tag: title
+    content: Starlight 🌟 Crea sitios de documentación con Astro
+description: Starlight axúdache a crear sitios web de documentación fermosos e de alto rendemento con Astro.
+template: splash
+editUrl: false
+lastUpdated: false
+banner:
+  content: |
+    <span class="ph-banner">
+      <span class="ph-houston"><img src="/ph-houston.svg" alt="" width="72" height="72"/></span>
+      <span class="ph-text">
+        <strong>Benvidos cazadores de produtos&nbsp;👋</strong>
+        <a href="https://www.producthunt.com/posts/starlight-by-astro">Estamos en directo agora mesmo!</a>
+      </span>
+    </span>
+hero:
+  title: Fai lucir os teus documentos con Starlight
+  tagline: Todo o que necesitas para construír un sitio web de documentación estelar. Rápido, accesible e fácil de usar.
+  image:
+    file: ../../../assets/hero-star.webp
+  actions:
+    - text: Comezar
+      icon: right-arrow
+      variant: primary
+      link: /gl/getting-started/
+    - text: Ver en GitHub
+      icon: external
+      link: https://github.com/withastro/starlight
+---
+
+import { CardGrid, Card } from '@astrojs/starlight/components';
+import AboutAstro from '../../../components/about-astro.astro';
+
+<CardGrid stagger>
+	<Card title="Documentación que deleita" icon="open-book">
+		Inclúe: navegación do sitio, busca, internacionalización, SEO, tipografía de fácil lectura, 
+    resaltado de código, modo escuro e moito máis.
+	</Card>
+	<Card title="Impulsado por Astro" icon="rocket">
+		Aproveita toda a potencia e o rendemento de Astro. Amplía Starlight 
+    coas túas bibliotecas e integracións Astro favoritas.
+	</Card>
+	<Card title="Markdown, Markdoc y MDX" icon="document">
+		Trae a túa linguaxe de marcado favorita. Starlight ofrécelle validación 
+    integrada de frontmatter coa seguridade do tipado TypeScript.
+	</Card>
+	<Card title="Leva as túas propias compoñentes de UI" icon="puzzle">
+		Starlight entrégasse como unha solución de documentos completa e independente do marco. 
+    Amplíao con React, Vue, Svelte, Solid e moito máis.
+	</Card>
+</CardGrid>
+
+<AboutAstro title="Ofrecido para ti por">
+Astro é o marco web todo nun deseñado para a velocidade.
+Saca o teu contido desde calquera sitio e implementao en todas partes, todo potenciado coas túas compoñentes e bibliotecas de IU favoritas.
+
+[Aprende sobre Astro](https://astro.build/)
+
+</AboutAstro>

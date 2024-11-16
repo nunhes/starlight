@@ -1,0 +1,22 @@
+{
+  "skipLink.label": "Saltar ao contido",
+  "search.label": "Buscar",
+  "search.shortcutLabel": "(Preme / para buscar)",
+  "search.cancelLabel": "Interromper",
+  "search.devWarning": "A busca só está dispoñible nas versións de produción.  \nIntenta construir e previsualizar o sitio para probalo localmente.",
+  "themeSelect.accessibleLabel": "Seleccionar tema",
+  "themeSelect.dark": "Escuro",
+  "themeSelect.light": "Craro",
+  "themeSelect.auto": "Automático",
+  "languageSelect.accessibleLabel": "Seleccionar idioma",
+  "menuButton.accessibleLabel": "Menú",
+  "sidebarNav.accessibleLabel": "Primario",
+  "tableOfContents.onThisPage": "Nesta páxina",
+  "tableOfContents.overview": "Sinopsé",
+  "i18n.untranslatedContent": "Esta páxina aínda non está dispoñible no teu idioma.",
+  "page.editLink": "Edita esta páxina",
+  "page.lastUpdated": "Última actualización:",
+  "page.previousLink": "Páxina anterior",
+  "page.nextLink": "Seguinte páxina",
+  "404.text": "Páxina non atopada. Verifica a URL ou intenta usar a barra de busca."
+}
